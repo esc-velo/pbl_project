@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>TRUSTA2A Neural Core</title>
+
+<style>
+body{
+    margin:0;
+    background:#02030a;
+    color:#00ffd5;
+    font-family:monospace;
+    overflow:hidden;
+}
+
+/* CYBER GRID */
+body::before{
+    content:"";
+    position:absolute;
+    width:100%;
+    height:100%;
+    background:
+        linear-gradient(#00ffd510 1px, transparent 1px),
+        linear-gradient(90deg,#00ffd510 1px, transparent 1px);
+    background-size:40px 40px;
+    z-index:-1;
+}
+
+.ui{
+    display:flex;
+    height:80vh;
+}
+
+.panel{
+    flex:1;
+    padding:20px;
+    border-right:1px solid #00ffd533;
+}
+
+/* CENTER HEADINGS */
+.panel h2{
+    text-align:center;
+}
+
+/* PLANNER COLUMN SPACING */
+.planner-stack{
+    display:flex;
+    flex-direction:column;
+    gap:22px;   /* Equal spacing between elements */
+    margin-top:20px;
+}
+
+/* NEURAL NODES */
+.node{
+    border:1px solid #00ffd5;
+    padding:20px;
+    text-align:center;
+    animation:neuralPulse 2s infinite;
+}
+
+@keyframes neuralPulse{
+    0%{ box-shadow:0 0 10px #00ffd544; }
+    50%{ box-shadow:0 0 25px #00ffd5aa; }
+    100%{ box-shadow:0 0 10px #00ffd544; }
+}
+
+.router.block{
+    border-color:#ff3b3b;
+    animation:firewall .6s infinite alternate;
+}
+
+@keyframes firewall{
+    from{ box-shadow:0 0 15px #ff3b3b55; }
+    to{ box-shadow:0 0 40px #ff3b3baa; }
+}
+
+/* TRUST GRAPH */
+canvas{
+    background:#00000055;
+}
+
+/* FOOTER PACKET TRACK */
+.footer{
+    position:absolute;
+    bottom:0;
+    width:100%;
+    height:20vh;
+    border-top:1px solid #00ffd533;
+}
+
+/* PACKETS */
+.packet{
+    position:absolute;
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    background:#00ffd5;
+    box-shadow:0 0 15px #00ffd5;
+    bottom:50px;
+    left:200px;
+    transition:1.5s linear;
+}
+
+.packet.high{
+    background:#ff3b3b;
+    box-shadow:0 0 20px #ff3b3b;
+}
+
+/* TERMINAL */
+.log{
+    height:250px;
+    overflow:auto;
+    font-size:13px;
+}
+
+.trust-bar{
+    height:10px;
+    background:#00ffd5;
+    transition:.3s;
+}
+
+.quarantine{
+    color:#ff3b3b;
+}
+
+button{
+    background:black;
+    border:1px solid #00ffd5;
+    color:#00ffd5;
+    padding:10px;
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="ui">
+
+<!-- PLANNER PANEL -->
+<div class="panel">
+<h2>PLANNER AI</h2>
+
+<div class="planner-stack">
+
+<button onclick="toggleAnomaly()">⚠ Inject Anomaly</button>
+<button onclick="sendPacket()">▶ Dispatch Packet</button>
+
+<div>
+Trust Level
+<div id="trustBar" class="trust-bar" style="width:80%"></div>
+<div id="statusText">STATUS: ACTIVE</div>
+</div>
+
+<div class="node">NEURAL PLANNER NODE</div>
+
+<canvas id="trustGraph" width="250" height="120"></canvas>
+
+</div>
+</div>
+
+<!-- ROUTER PANEL -->
+<div class="panel">
+<h2>TRUSTA2A ROUTER CORE</h2>
+<div id="routerNode" class="node router">IDLE</div>
+<div id="log" class="log"></div>
+</div>
+
+<!-- WORKER PANEL -->
+<div class="panel">
+<h2>WORKER AI</h2>
+<div id="workerNode" class="node">WAITING...</div>
+</div>
+
+</div>
+
+<div class="footer" id="footer"></div>
+
+<script>
+let anomaly=false;
+let trust=0.8;
+let trustHistory=[0.8];
+
+const router=document.getElementById("routerNode");
+const footer=document.getElementById("footer");
+const ctx=document.getElementById("trustGraph").getContext("2d");
+
+function log(text){
+    let box=document.getElementById("log");
+    let line=document.createElement("div");
+    typeWriter(line,"> "+text);
+    box.appendChild(line);
+    box.scrollTop=box.scrollHeight;
+}
+
+function typeWriter(el,text){
+    let i=0;
+    let t=setInterval(()=>{
+        el.innerHTML+=text[i];
+        i++;
+        if(i>=text.length) clearInterval(t);
+    },6);
+}
+
+function updateTrust(){
+    document.getElementById("trustBar").style.width=(trust*100)+"%";
+    trustHistory.push(trust);
+    drawGraph();
+
+    if(trust<=0.1){
+        document.getElementById("statusText").innerHTML="STATUS: QUARANTINED";
+        document.getElementById("statusText").classList.add("quarantine");
+    }
+}
+
+function drawGraph(){
+    ctx.clearRect(0,0,250,120);
+    ctx.strokeStyle="#00ffd5";
+    ctx.beginPath();
+    trustHistory.forEach((v,i)=>{
+        ctx.lineTo(i*20,120-(v*100));
+    });
+    ctx.stroke();
+}
+
+function toggleAnomaly(){
+    anomaly=!anomaly;
+    log(anomaly ? "ANOMALOUS SIGNAL DETECTED" : "ANOMALY CLEARED");
+}
+
+function spawnPacket(){
+    let p=document.createElement("div");
+    p.className="packet";
+    if(anomaly) p.classList.add("high");
+    footer.appendChild(p);
+
+    setTimeout(()=>p.style.left="45%",50);
+
+    setTimeout(()=>{
+        router.innerHTML="ANALYZING...";
+        log("AIC VERIFIED");
+
+        if(anomaly){
+            router.classList.add("block");
+            router.innerHTML="❌ BLOCKED";
+            trust-=0.2;
+            if(trust<0) trust=0;
+            updateTrust();
+            log("BRA FAILURE — TRUST REDUCED");
+            p.remove();
+        }else{
+            router.innerHTML="FORWARDED";
+            p.style.left="80%";
+
+            setTimeout(()=>{
+                document.getElementById("workerNode").innerHTML="TASK EXECUTED";
+                router.innerHTML="IDLE";
+                p.remove();
+                log("WORKER EXECUTION COMPLETE");
+            },900);
+        }
+
+    },900);
+}
+
+function sendPacket(){
+    if(trust<=0.1){
+        log("ROUTER LOCKDOWN — AGENT QUARANTINED");
+        return;
+    }
+    spawnPacket();
+}
+
+setInterval(()=>{
+    if(Math.random()<0.3){
+        spawnPacket();
+    }
+},3000);
+
+updateTrust();
+drawGraph();
+</script>
+
+</body>
+</html>
